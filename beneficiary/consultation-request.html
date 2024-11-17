@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>طلب استشارة جديدة - خدمة زمزم للاستشارات الصحية</title>
+    <link href="/node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="/">خدمة زمزم للاستشارات الصحية</a>
+      </div>
+    </nav>
+
+    <div class="container mt-5 mb-5" x-data="consultationRequest">
+      <h1 class="w-100 text-center text-primary mb-4">طلب استشارة</h1>
+      <!-- Progress Bar -->
+      <div class="progress mb-4">
+        <div class="progress-bar" role="progressbar" :style="`width: ${(currentStep / 4) * 100}%`"></div>
+      </div>
+
+      <!-- Steps Indicator -->
+      <div class="row mb-4">
+        <div class="col-3 text-center" :class="{ 'text-primary': currentStep >= 1 }">
+          <div class="fw-bold mb-2">١. معلومات المريض</div>
+        </div>
+        <div class="col-3 text-center" :class="{ 'text-primary': currentStep >= 2 }">
+          <div class="fw-bold mb-2">٢. وصف الحالة</div>
+        </div>
+        <div class="col-3 text-center" :class="{ 'text-primary': currentStep >= 3 }">
+          <div class="fw-bold mb-2">٣. اختيار الموعد</div>
+        </div>
+        <div class="col-3 text-center" :class="{ 'text-primary': currentStep >= 4 }">
+          <div class="fw-bold mb-2">٤. المراجعة النهائية</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <!-- Step 1: Patient Information -->
+          <div x-show="currentStep === 1">
+            <h3 class="card-title mb-4">معلومات المريض</h3>
+            <div class="mb-3">
+              <label class="form-label">الاسم الكامل</label>
+              <input type="text" class="form-control" x-model="formData.name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">تاريخ الميلاد</label>
+              <input type="date" class="form-control" x-model="formData.birthDate" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الجنس</label>
+              <select class="form-select" x-model="formData.gender" required>
+                <option value="">اختر الجنس</option>
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">رقم الجوال</label>
+              <input type="tel" class="form-control" x-model="formData.mobile" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">رقم الهوية الوطنية</label>
+              <input type="text" class="form-control" x-model="formData.nationalId" required>
+            </div>
+          </div>
+
+          <!-- Step 2: Issue Description -->
+          <div x-show="currentStep === 2">
+            <h3 class="card-title mb-4">وصف الحالة</h3>
+            <div class="mb-3">
+              <label class="form-label">وصف المشكلة الصحية</label>
+              <textarea class="form-control" rows="5" x-model="formData.description" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">منذ متى بدأت الأعراض؟</label>
+              <input type="text" class="form-control" x-model="formData.symptomsDuration" required>
+            </div>
+          </div>
+
+          <!-- Step 3: Appointment Selection -->
+          <div x-show="currentStep === 3">
+            <h3 class="card-title mb-4">اختيار الموعد</h3>
+            <div class="mb-3">
+              <label class="form-label">العيادة</label>
+              <select class="form-select" x-model="formData.clinic" @change="loadDoctors()" required>
+                <template x-for="clinic in clinics" :key="clinic.id">
+                  <option :value="clinic.id" x-text="clinic.name"></option>
+                </template>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الطبيب</label>
+              <select class="form-select" x-model="formData.doctor" @change="loadAppointments()" required>
+                <template x-for="doctor in doctors" :key="doctor.id">
+                  <option :value="doctor.id" x-text="doctor.name"></option>
+                </template>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الموعد المتاح</label>
+              <select class="form-select" x-model="formData.appointment" required>
+                <template x-for="appointment in appointments" :key="appointment.id">
+                  <option :value="appointment.id" x-text="appointment.time"></option>
+                </template>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">المستندات الداعمة</label>
+              <input type="file" class="form-control" multiple @change="handleFileUpload($event)">
+            </div>
+          </div>
+
+          <!-- Step 4: Summary -->
+          <div x-show="currentStep === 4">
+            <h3 class="card-title mb-4">ملخص الاستشارة</h3>
+            <dl class="row">
+              <dt class="col-sm-3">الاسم</dt>
+              <dd class="col-sm-9" x-text="formData.name"></dd>
+
+              <dt class="col-sm-3">تاريخ الميلاد</dt>
+              <dd class="col-sm-9" x-text="formData.birthDate"></dd>
+
+              <dt class="col-sm-3">الجنس</dt>
+              <dd class="col-sm-9" x-text="formData.gender === 'male' ? 'ذكر' : 'أنثى'"></dd>
+
+              <dt class="col-sm-3">رقم الجوال</dt>
+              <dd class="col-sm-9" x-text="formData.mobile"></dd>
+
+              <dt class="col-sm-3">وصف الحالة</dt>
+              <dd class="col-sm-9" x-text="formData.description"></dd>
+
+              <dt class="col-sm-3">العيادة</dt>
+              <dd class="col-sm-9" x-text="getClinicName(formData.clinic)"></dd>
+
+              <dt class="col-sm-3">الطبيب</dt>
+              <dd class="col-sm-9" x-text="getDoctorName(formData.doctor)"></dd>
+
+              <dt class="col-sm-3">الموعد</dt>
+              <dd class="col-sm-9" x-text="getAppointmentTime(formData.appointment)"></dd>
+            </dl>
+          </div>
+
+          <!-- Navigation Buttons -->
+          <div class="d-flex justify-content-between mt-4">
+            <button class="btn btn-secondary" 
+                    @click="previousStep()" 
+                    x-show="currentStep > 1">
+              السابق
+            </button>
+            <button class="btn btn-primary" 
+                    @click="currentStep < 4 ? nextStep() : submitForm()" 
+                    x-text="currentStep < 4 ? 'التالي' : 'تأكيد الحجز'">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/beneficiary/consultation-request.js"></script>
+  </body>
+</html>
